@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type RunEFunc func(cmd *cobra.Command, args []string) error
+
 var rootCmd = &cobra.Command{
 	Use:   "stress-test-cli",
 	Short: "A stress test CLI",
