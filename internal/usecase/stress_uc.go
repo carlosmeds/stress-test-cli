@@ -3,6 +3,8 @@ package usecase
 import (
 	"fmt"
 	"net/url"
+
+	"github.com/carlosmeds/stress-test-cli/internal/infra/api"
 )
 
 type StressInputDTO struct {
@@ -23,6 +25,9 @@ func (u *StressUseCase) Execute(i StressInputDTO) (o string, err error) {
 	if err := i.Validate(); err != nil {
 		return "Error on validation", err
 	}
+
+	statusCode := api.RequestApi(i.Url)
+	fmt.Printf("Status code: %d\n", statusCode)
 
 	return "Use Case done!", nil
 }
