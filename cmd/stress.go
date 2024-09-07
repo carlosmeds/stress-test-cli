@@ -9,22 +9,17 @@ import (
 var stressCmd = &cobra.Command{
 	Use:   "stress",
 	Short: "Stress test a given URL",
-	Long: `Stress test a given URL with a number of requests and concurrency level.`,
+	Long:  `Stress test a given URL with a number of requests and concurrency level.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("stress called")
+		fmt.Println("stress called for url " + cmd.Flag("url").Value.String() + " with " + cmd.Flag("requests").Value.String() + " requests and " + cmd.Flag("concurrency").Value.String() + " concurrency")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(stressCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// stressCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// stressCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	stressCmd.Flags().StringP("url", "u", "", "URL to stress test")
+	stressCmd.Flags().IntP("requests", "r", 100, "Number of requests to perform")
+	stressCmd.Flags().IntP("concurrency", "c", 1, "Number of multiple requests to make at a time")
+	stressCmd.MarkFlagRequired("url")
 }
