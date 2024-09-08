@@ -41,13 +41,13 @@ func (u *StressUseCase) Execute(i StressInputDTO) (o string, err error) {
 		wg.Add(1)
 		reqControl <- struct{}{}
 
-		fmt.Printf("request %d\n", j)
 		go callApi(i.Url, reqControl, &statusCount)
 	}
 	wg.Wait()
 	duration := time.Since(start)
 
 	fmt.Println("\n\n---------------REPORT---------------")
+	fmt.Printf("[URL]:      %s\n", i.Url)
 	fmt.Printf("[REQUESTS]: %d\n", i.Requests)
 	fmt.Printf("[DURATION]: %s\n\n", duration)
 
