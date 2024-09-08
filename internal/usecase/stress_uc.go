@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/carlosmeds/stress-test-cli/internal/infra/api"
 )
@@ -33,23 +35,43 @@ func (u *StressUseCase) Execute(i StressInputDTO) (o string, err error) {
 
 	fmt.Println("Starting stress test...")
 	reqControl := make(chan struct{}, i.Concurrency)
+	var statusCount sync.Map
+	start := time.Now()
 	for j := 0; j < i.Requests; j++ {
 		wg.Add(1)
 		reqControl <- struct{}{}
-		
+
 		fmt.Printf("request %d\n", j)
-		go callApi(i.Url, reqControl)
+		go callApi(i.Url, reqControl, &statusCount)
 	}
 	wg.Wait()
+	duration := time.Since(start)
+
+	fmt.Println("\n\n---------------REPORT---------------")
+	fmt.Printf("[REQUESTS]: %d\n", i.Requests)
+	fmt.Printf("[DURATION]: %s\n\n", duration)
+
+	found200 := false
+	statusCount.Range(func(key, value interface{}) bool {
+		fmt.Printf("%d requests returned status code %d\n", atomic.LoadInt64(value.(*int64)), key.(int))
+
+		if key.(int) == 200 {
+            found200 = true
+        }
+        return true
+	})
+	if !found200 {
+        fmt.Println("No requests returned status code 200")
+    }
 
 	return "Use Case done!", nil
 }
 
-func callApi(url string, reqControl chan struct{}) int {
+func callApi(url string, reqControl chan struct{}, statusCount *sync.Map) int {
 	defer wg.Done()
 
 	status := api.RequestApi(url)
-	fmt.Printf("Status code: %d\n", status)
+	incrementStatusCount(statusCount, status)
 	<-reqControl
 
 	return status
@@ -71,4 +93,9 @@ func (dto *StressInputDTO) Validate() error {
 func isValidURL(u string) bool {
 	_, err := url.ParseRequestURI(u)
 	return err == nil
+}
+
+func incrementStatusCount(statusCount *sync.Map, status int) {
+	val, _ := statusCount.LoadOrStore(status, new(int64))
+	atomic.AddInt64(val.(*int64), 1)
 }
