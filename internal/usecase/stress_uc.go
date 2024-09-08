@@ -3,8 +3,13 @@ package usecase
 import (
 	"fmt"
 	"net/url"
+	"sync"
 
 	"github.com/carlosmeds/stress-test-cli/internal/infra/api"
+)
+
+var (
+	wg sync.WaitGroup
 )
 
 type StressInputDTO struct {
@@ -26,10 +31,28 @@ func (u *StressUseCase) Execute(i StressInputDTO) (o string, err error) {
 		return "Error on validation", err
 	}
 
-	statusCode := api.RequestApi(i.Url)
-	fmt.Printf("Status code: %d\n", statusCode)
+	fmt.Println("Starting stress test...")
+	reqControl := make(chan struct{}, i.Concurrency)
+	for j := 0; j < i.Requests; j++ {
+		wg.Add(1)
+		reqControl <- struct{}{}
+		
+		fmt.Printf("request %d\n", j)
+		go callApi(i.Url, reqControl)
+	}
+	wg.Wait()
 
 	return "Use Case done!", nil
+}
+
+func callApi(url string, reqControl chan struct{}) int {
+	defer wg.Done()
+
+	status := api.RequestApi(url)
+	fmt.Printf("Status code: %d\n", status)
+	<-reqControl
+
+	return status
 }
 
 func (dto *StressInputDTO) Validate() error {
